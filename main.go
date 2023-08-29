@@ -14,6 +14,17 @@ import (
 const fileName = "sqlite.db"
 
 func main() {
+	commands := []Command{
+		GetAllTasks,
+		CreateTask,
+		CreateTask,
+		GetAllTasks,
+		CreateTask,
+		CreateTask,
+		GetAllTasks,
+		GetAllTasks,
+	}
+
 	// check for parameter to delete the database file
 	if len(os.Args) > 1 && os.Args[1] == "--restart" {
 		os.Remove(fileName)
@@ -31,25 +42,45 @@ func main() {
 	}
 	fmt.Println("Connected to database")
 
-	writeChannel := make(chan Command)
-	readChannel := make(chan Command)
+	writeChannel := make(chan Command, 1)
+	readChannel := make(chan Command, 1)
 
 	go func() {
-		readChannel <- GetAllTasks
+		for c := range readChannel {
+			fmt.Println("Read channel:", c)
+			if c == GetAllTasks {
+				GetAll(todoRepo)
+			}
+		}
 	}()
 
 	go func() {
-		writeChannel <- CreateTask
+		for c := range writeChannel {
+			fmt.Println("Write channel:", c)
+			if c == CreateTask {
+				Create(todoRepo)
+			}
+		}
 	}()
 
-	// read/write depending on the channel
-	select {
-	case read := <-readChannel:
-		GetAll(todoRepo)
-		fmt.Println("Read:", read)
-	case write := <-writeChannel:
-		fmt.Println("Write:", write)
-		Create(todoRepo)
+	// read/write to db depending on the channel
+	for _, c := range commands {
+		fmt.Println("Command:", c)
+		if c == GetAllTasks {
+			readChannel <- c
+		} else if c == CreateTask {
+			writeChannel <- c
+		}
+	}
+
+	close(readChannel)
+	close(writeChannel)
+
+	for c := range readChannel {
+		fmt.Println("Read channel:", c)
+	}
+	for c := range writeChannel {
+		fmt.Println("Write channel:", c)
 	}
 }
 
