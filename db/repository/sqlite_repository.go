@@ -1,10 +1,11 @@
-package todo
+package repository
 
 import (
 	"database/sql"
 	"errors"
 
 	"github.com/mattn/go-sqlite3"
+	"kufa.io/sqlitego/db/models"
 )
 
 // All errors that can be returned by the repository
@@ -30,7 +31,7 @@ func NewSQLiteRepository(db *sql.DB) *SQLiteRepository {
 
 func (r *SQLiteRepository) Migrate() error {
 	query := `
-		CREATE TABLE IF NOT EXISTS todos (
+		CREATE TABLE IF NOT EXISTS tasks (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			description TEXT,
@@ -43,9 +44,9 @@ func (r *SQLiteRepository) Migrate() error {
 	return err
 }
 
-func (r *SQLiteRepository) Create(todo Todo) (*Todo, error) {
+func (r *SQLiteRepository) Create(todo models.Task) (*models.Task, error) {
 	query := `
-		INSERT INTO todos (name, description, completed)
+		INSERT INTO tasks (name, description, completed)
 		VALUES (?, ?, ?);`
 	res, err := r.db.Exec(query, todo.Name, todo.Description, todo.Completed) // Exec is used for queries that don't return rows
 	if err != nil {
@@ -67,32 +68,33 @@ func (r *SQLiteRepository) Create(todo Todo) (*Todo, error) {
 	return &todo, nil
 }
 
-func (r *SQLiteRepository) All() ([]Todo, error) {
+func (r *SQLiteRepository) All() ([]models.Task, error) {
 	query := `
 		SELECT id, name, description, completed, created_date, completed_date
-		FROM todos;`
+		FROM tasks;`
 	rows, err := r.db.Query(query) // Query is used for rows
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var todos []Todo
+	var tasks []models.Task
+	var completedDate sql.NullTime
 	for rows.Next() {
-		var todo Todo
-		if err := rows.Scan(&todo.Id, &todo.Name, &todo.Description, &todo.Completed, &todo.CreatedDate, &todo.CompletedDate); err != nil {
+		var todo models.Task
+		if err := rows.Scan(&todo.Id, &todo.Name, &todo.Description, &todo.Completed, &todo.CreatedDate, &completedDate); err != nil {
 			return nil, err
 		}
-		todos = append(todos, todo)
+		tasks = append(tasks, todo)
 	}
 
-	return todos, nil
+	return tasks, nil
 }
 
-func (r *SQLiteRepository) GetByName(name string) ([]Todo, error) {
+func (r *SQLiteRepository) GetByName(name string) ([]models.Task, error) {
 	query := `
 		SELECT id, name, description, completed, created_date, completed_date
-		FROM todos
+		FROM tasks
 		WHERE name = ?;`
 	rows, err := r.db.Query(query, name) // Query is used for rows
 	if err != nil {
@@ -100,14 +102,14 @@ func (r *SQLiteRepository) GetByName(name string) ([]Todo, error) {
 	}
 	defer rows.Close()
 
-	var todos []Todo
+	var tasks []models.Task
 	for rows.Next() {
-		var todo Todo
+		var todo models.Task
 		if err := rows.Scan(&todo.Id, &todo.Name, &todo.Description, &todo.Completed, &todo.CreatedDate, &todo.CompletedDate); err != nil {
 			return nil, err
 		}
-		todos = append(todos, todo)
+		tasks = append(tasks, todo)
 	}
 
-	return todos, nil
+	return tasks, nil
 }

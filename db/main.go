@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 
-	"kufa.io/sqlitego/todo"
+	"kufa.io/sqlitego/db/models"
+
+	"kufa.io/sqlitego/db/repository"
 
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library (driver for sqlite) without using it explicitly
 )
@@ -36,8 +38,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	todoRepo := todo.NewSQLiteRepository(db)
-	if err := todoRepo.Migrate(); err != nil {
+	r := repository.NewSQLiteRepository(db)
+	if err := r.Migrate(); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected to database")
@@ -49,7 +51,7 @@ func main() {
 		for c := range readChannel {
 			fmt.Println("Read channel:", c)
 			if c == GetAllTasks {
-				GetAll(todoRepo)
+				GetAll(r)
 			}
 		}
 	}()
@@ -58,7 +60,7 @@ func main() {
 		for c := range writeChannel {
 			fmt.Println("Write channel:", c)
 			if c == CreateTask {
-				Create(todoRepo)
+				Create(r)
 			}
 		}
 	}()
@@ -84,26 +86,26 @@ func main() {
 	}
 }
 
-func GetAll(r *todo.SQLiteRepository) {
-	// Get all todos
-	todos, err := r.All()
+func GetAll(r *repository.SQLiteRepository) {
+	// Get all tasks
+	tasks, err := r.All()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("All todos:", todos)
+	fmt.Println("All tasks:", tasks)
 }
 
-func Create(r *todo.SQLiteRepository) *todo.Todo {
-	// Create a new todo
-	todo1 := todo.Todo{
+func Create(r *repository.SQLiteRepository) *models.Task {
+	// Create a new task
+	task1 := models.Task{
 		Name:        "Learn Go",
 		Description: "Learn Golang by solving algorithms and writing code!",
 		Completed:   false,
 	}
-	created, err := r.Create(todo1)
+	created, err := r.Create(task1)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Created todo:", created)
+	fmt.Println("Created task:", created)
 	return created
 }

@@ -1,10 +1,10 @@
-package todo
+package models
 
 import (
 	"time"
 )
 
-type Todo struct {
+type Task struct {
 	Id            int64
 	Name          string
 	Description   string
