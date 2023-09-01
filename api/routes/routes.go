@@ -2,13 +2,24 @@ package routes
 
 import (
 	"github.com/gorilla/mux"
-	"kufa.io/sqlitego/api/handler" // Import your handler package
+	h "kufa.io/sqlitego/api/handler"
 )
 
-func NewRouter() *mux.Router {
+func NewRouter(h *h.Handler) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	r.HandleFunc("/tasks", handler.GetAllTasks).Methods("GET")
+	// GET
+	r.HandleFunc("/tasks", h.GetAllTasks).Methods("GET")
+	r.HandleFunc("/task/{id}", h.GetTask).Methods("GET")
+
+	// POST
+	r.HandleFunc("/task/", h.CreateTask).Methods("POST")
+
+	// PUT
+	r.HandleFunc("/task", h.UpdateTask).Methods("PUT")
+
+	// DELETE
+	r.HandleFunc("/task/{id}", h.DeleteTask).Methods("DELETE")
 
 	return r
 }
